@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  uuid         String        @default(uuid()) @unique
+  name         String
+  email        String        @unique
+  username     String        @unique
+  password     String
+  isActive     Boolean       @default(true)
+  lastLogin    DateTime? 
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  roles        UserRole[]
+  logEntries   LogActivity[]
+  refreshTokens RefreshToken[]
+}
+
+model UserRole {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @default(uuid()) @unique
+  userId      Int
+  role        Role
+  isActive    Boolean  @default(true)
+  profileData Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LogActivity {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  details   Json?    // Additional information about the action
+  ipAddress String?
+  userAgent String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  userId     Int
+  isRevoked  Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+enum Role {
+  jobseeker
+  company
+  admin
+}
