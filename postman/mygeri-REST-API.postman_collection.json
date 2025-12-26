@@ -286,7 +286,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+1234567890\",\n  \"bio\": \"Updated bio information\",\n  \"location\": \"New York, USA\"\n}"
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+628123456789\",\n  \"bio\": \"Kader Partai aktif sejak 2020\",\n  \"nik\": \"3276047658400027\",\n  \"jenisKelamin\": \"Laki-laki\",\n  \"statusKawin\": \"Kawin\",\n  \"tempatLahir\": \"Jakarta\",\n  \"tanggalLahir\": \"1990-01-15\",\n  \"provinsi\": \"DKI Jakarta\",\n  \"kota\": \"Jakarta Selatan\",\n  \"kecamatan\": \"Kebayoran Baru\",\n  \"kelurahan\": \"Pulo\",\n  \"rt\": \"001\",\n  \"rw\": \"005\",\n  \"jalan\": \"Jl. Merdeka No. 10\",\n  \"pekerjaan\": \"Pegawai Swasta\",\n  \"pendidikan\": \"S1\",\n  \"underbow\": \"Partai Gerindra\",\n  \"kegiatan\": \"Pelatihan Kader 2024\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/users/profile",
@@ -294,6 +294,69 @@
               "path": ["api", "users", "profile"]
             },
             "description": "Update current user's profile information"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"OldPassword123\",\n  \"newPassword\": \"NewPassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "change-password"]
+            },
+            "description": "Change user password. Requires old password verification. All refresh tokens will be revoked after successful change."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Photo (Profile/KTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "fotoType",
+                  "value": "profil",
+                  "description": "Type of photo: 'profil' or 'ktp'",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "description": "Image file (.jpg, .jpeg, .png, max 5MB)",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/profile/upload-foto",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "profile", "upload-foto"]
+            },
+            "description": "Upload profile photo or KTP photo. Max file size: 5MB. Allowed formats: .jpg, .jpeg, .png"
           },
           "response": []
         },

@@ -8,46 +8,104 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  uuid         String        @default(uuid()) @unique
-  name         String
-  email        String        @unique
-  username     String        @unique
-  password     String
-  isActive     Boolean       @default(true)
-  lastLogin    DateTime? 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                       Int                       @id @default(autoincrement())
+  uuid                     String                    @unique @default(uuid())
+  name                     String
+  email                    String                    @unique
+  username                 String                    @unique
+  password                 String
+  isActive                 Boolean                   @default(true)
+  lastLogin                DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  bio                      String?
+  fotoKtp                  String?                   @db.VarChar(255)
+  fotoProfil               String?                   @db.VarChar(255)
+  jalan                    String?                   @db.VarChar(255)
+  jenisKelamin             String?                   @db.VarChar(20)
+  kecamatan                String?                   @db.VarChar(100)
+  kegiatan                 String?
+  kelurahan                String?                   @db.VarChar(100)
+  kota                     String?                   @db.VarChar(100)
+  nik                      String?                   @db.VarChar(16)
+  pekerjaan                String?                   @db.VarChar(100)
+  pendidikan               String?                   @db.VarChar(50)
+  phone                    String?
+  provinsi                 String?                   @db.VarChar(100)
+  rt                       String?                   @db.VarChar(3)
+  rw                       String?                   @db.VarChar(3)
+  statusKawin              String?                   @db.VarChar(20)
+  tanggalLahir             DateTime?
+  tempatLahir              String?                   @db.VarChar(100)
+  underbow                 String?                   @db.VarChar(255)
+  conversationParticipants ConversationParticipant[]
+  logEntries               LogActivity[]
+  messages                 Message[]
+  refreshTokens            RefreshToken[]
+  blockedBy                UserBlock[]               @relation("UserBlocked")
+  blocking                 UserBlock[]               @relation("UserBlocker")
+  userHistory              UserHistory[]
+  roles                    UserRole[]
+  posts                    Post[]
+  postLikes                PostLike[]
+  postComments             PostComment[]
+}
 
-  roles        UserRole[]
-  logEntries   LogActivity[]
-  refreshTokens RefreshToken[]
+model Post {
+  id         Int           @id @default(autoincrement())
+  user       User          @relation(fields: [userId], references: [id])
+  userId     Int
+  content    String?
+  imageUrl   String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  likes      PostLike[]
+  comments   PostComment[]
+}
+
+model PostLike {
+  id        Int      @id @default(autoincrement())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  comment   String
+  createdAt DateTime @default(now())
 }
 
 model UserRole {
   id          Int      @id @default(autoincrement())
-  uuid        String   @default(uuid()) @unique
+  uuid        String   @unique @default(uuid())
   userId      Int
   role        Role
   isActive    Boolean  @default(true)
   profileData Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LogActivity {
   id        Int      @id @default(autoincrement())
   userId    Int?
   action    String
-  details   Json?    // Additional information about the action
+  details   Json?
   ipAddress String?
   userAgent String?
   success   Boolean  @default(true)
   createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([action])
@@ -55,23 +113,97 @@ model LogActivity {
 }
 
 model RefreshToken {
-  id         Int      @id @default(autoincrement())
-  token      String   @unique
-  userId     Int
-  isRevoked  Boolean  @default(false)
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  revokedAt  DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int       @id @default(autoincrement())
+  token     String    @unique
+  userId    Int
+  isRevoked Boolean   @default(false)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
   @@index([expiresAt])
 }
 
+model Conversation {
+  id           Int                       @id @default(autoincrement())
+  uuid         String                    @unique @default(uuid())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([updatedAt(sort: Desc)])
+}
+
+model ConversationParticipant {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  userId         Int
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  uuid           String       @unique @default(uuid())
+  conversationId Int
+  senderId       Int?
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User?        @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([conversationId, isRead])
+}
+
+model UserBlock {
+  id            Int      @id @default(autoincrement())
+  blockerId     Int
+  blockedUserId Int
+  createdAt     DateTime @default(now())
+  blockedUser   User     @relation("UserBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  blocker       User     @relation("UserBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockerId])
+  @@index([blockedUserId])
+}
+
+model UserHistory {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  type        HistoryType
+  description String?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt(sort: Desc)])
+}
+
 enum Role {
   jobseeker
   company
   admin
+}
+
+enum HistoryType {
+  login
+  logout
+  open_app
+  edit_profile
+  search_user
 }

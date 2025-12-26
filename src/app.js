@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import 'express-async-errors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Middleware imports
 import requestLogger from './middlewares/requestLogger.js';
@@ -17,27 +19,23 @@ import { activityLogger } from './middlewares/auditMiddleware.js';
 // Route imports
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/user/user.routes.js';
-
-// import logger from './utils/logger.js';
-// import morgan from 'morgan';
+import conversationRoutes from './modules/conversation/conversation.routes.js';
+import messageRoutes from './modules/message/message.routes.js';
+import historyRoutes from './modules/history/history.routes.js';
+import postRoutes from './modules/post/post.routes.js'; // Tambahkan ini
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
-// Integrasi morgan agar setiap request juga dicatat oleh winston
-// app.use(morgan('combined', {
-//   stream: {
-//     write: (message) => logger.info(message.trim())
-//   }
-// }));
-
-// Trust proxy configuration - fix for rate limiting warning
-// In development, trust localhost; in production, configure based on your setup
+// Trust proxy configuration
 if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', true); // Trust all proxies in production
+  app.set('trust proxy', true);
 } else {
-  app.set('trust proxy', 'loopback'); // Trust only localhost in development
+  app.set('trust proxy', 'loopback');
 }
 
 // Security headers
@@ -67,6 +65,9 @@ app.use(generalRateLimit);
 // Input sanitization
 app.use(sanitizeInput);
 
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Request logging
 app.use(requestLogger);
 
@@ -89,6 +90,10 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/conversations', messageRoutes);
+app.use('/api/history', historyRoutes);
+app.use('/api/posts', postRoutes); // Tambahkan ini
 
 // 404 handler
 app.use('*', (req, res) => {
