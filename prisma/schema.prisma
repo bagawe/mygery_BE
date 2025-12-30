@@ -49,18 +49,29 @@ model User {
   posts                    Post[]
   postLikes                PostLike[]
   postComments             PostComment[]
+  mentions                 Mention[]                 @relation("UserMentions")    // ✅ NEW
+  postViews                PostView[]                @relation("PostViews")       // ✅ NEW
 }
 
 model Post {
-  id         Int           @id @default(autoincrement())
-  user       User          @relation(fields: [userId], references: [id])
+  id         Int            @id @default(autoincrement())
   userId     Int
-  content    String?
-  imageUrl   String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  content    String?        @db.Text
+  imageUrl   String?        @db.VarChar(255)  // Keep for backward compatibility
+  imageUrls  Json?          // NEW: Array untuk multiple images
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes      PostLike[]
   comments   PostComment[]
+  hashtags   PostHashtag[]    // ✅ NEW
+  mentions   Mention[]        // ✅ NEW
+  views      PostView[]       // ✅ NEW
+  trending   TrendingPost?    // ✅ NEW
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model PostLike {
@@ -80,7 +91,7 @@ model PostComment {
   postId    Int
   user      User     @relation(fields: [userId], references: [id])
   userId    Int
-  comment   String
+  content   String   // ✅ FIXED: comment -> content (sesuai service)
   createdAt DateTime @default(now())
 }
 
@@ -192,6 +203,74 @@ model UserHistory {
   @@index([userId])
   @@index([type])
   @@index([createdAt(sort: Desc)])
+}
+
+// ✅ NEW MODELS FOR HASHTAGS, MENTIONS & TRENDING
+
+model Hashtag {
+  id        Int               @id @default(autoincrement())
+  name      String            @unique @db.VarChar(50)
+  count     Int               @default(0) // Total posts using this hashtag
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  posts     PostHashtag[]
+
+  @@index([name])
+  @@index([count])
+}
+
+model PostHashtag {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  hashtagId Int
+  createdAt DateTime @default(now())
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, hashtagId])
+  @@index([postId])
+  @@index([hashtagId])
+}
+
+model Mention {
+  id          Int      @id @default(autoincrement())
+  postId      Int
+  mentionedId Int      // User yang di-mention
+  createdAt   DateTime @default(now())
+
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mentioned User @relation("UserMentions", fields: [mentionedId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, mentionedId])
+  @@index([postId])
+  @@index([mentionedId])
+}
+
+model PostView {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  userId    Int?     // Null jika anonymous view
+  viewedAt  DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User? @relation("PostViews", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([viewedAt])
+}
+
+model TrendingPost {
+  id           Int      @id @default(autoincrement())
+  postId       Int      @unique
+  score        Float    // Trending score
+  lastUpdated  DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([score])
+  @@index([lastUpdated])
 }
 
 enum Role {

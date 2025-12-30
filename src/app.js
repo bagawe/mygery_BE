@@ -4,6 +4,7 @@ import 'express-async-errors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Middleware imports
 import requestLogger from './middlewares/requestLogger.js';
@@ -22,7 +23,7 @@ import userRoutes from './modules/user/user.routes.js';
 import conversationRoutes from './modules/conversation/conversation.routes.js';
 import messageRoutes from './modules/message/message.routes.js';
 import historyRoutes from './modules/history/history.routes.js';
-import postRoutes from './modules/post/post.routes.js'; // Tambahkan ini
+import postRoutes from './modules/post/post.routes.js';
 
 dotenv.config();
 
@@ -30,6 +31,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Ensure upload directories exist
+const uploadsDir = path.join(__dirname, '../uploads');
+const postsDir = path.join(uploadsDir, 'posts');
+const profilesDir = path.join(uploadsDir, 'profiles');
+const ktpDir = path.join(uploadsDir, 'ktp');
+
+[uploadsDir, postsDir, profilesDir, ktpDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`✅ Created directory: ${dir}`);
+  }
+});
 
 // Trust proxy configuration
 if (process.env.NODE_ENV === 'production') {
@@ -93,7 +107,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/conversations', messageRoutes);
 app.use('/api/history', historyRoutes);
-app.use('/api/posts', postRoutes); // Tambahkan ini
+app.use('/api/posts', postRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

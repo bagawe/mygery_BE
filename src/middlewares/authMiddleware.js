@@ -22,7 +22,8 @@ export async function authMiddleware(req, res, next) {
     const roleNames = Array.isArray(user.roles) ? user.roles.map(r => r.name || r.role) : [];
 
     req.user = { 
-      id: user.id, 
+      id: user.id,
+      userId: user.id,      // ADD THIS - for post controller compatibility
       uuid: user.uuid, 
       email: user.email,
       roles: roleNames
@@ -32,3 +33,5 @@ export async function authMiddleware(req, res, next) {
     return res.status(401).json({ success: false, message: 'Invalid token' });
   }
 }
+
+export const authenticateToken = authMiddleware;
