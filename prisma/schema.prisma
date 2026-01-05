@@ -63,15 +63,17 @@ model Post {
   updatedAt  DateTime       @updatedAt
 
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes      PostLike[]
-  comments   PostComment[]
-  hashtags   PostHashtag[]    // ✅ NEW
-  mentions   Mention[]        // ✅ NEW
+  likes      PostLike[]     @relation("PostLikes")
+  comments   PostComment[]  @relation("PostComments")
+  hashtags   PostHashtag[]  @relation("PostHashtags")
+  mentions   Mention[]      @relation("PostMentions")
   views      PostView[]       // ✅ NEW
   trending   TrendingPost?    // ✅ NEW
+  history     UserHistory[]   @relation("PostHistory") // ✅ NEW: Relation for mention history
 
   @@index([userId])
   @@index([createdAt])
+  @@map("posts")
 }
 
 model PostLike {
@@ -196,11 +198,14 @@ model UserHistory {
   userId      Int
   type        HistoryType
   description String?
+  postId      Int?     // ✅ NEW: ID postingan untuk mention/tag
   metadata    Json?
   createdAt   DateTime    @default(now())
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post        Post?       @relation("PostHistory", fields: [postId], references: [id], onDelete: SetNull) // ✅ NEW: Relation to Post
 
   @@index([userId])
+  @@index([postId]) // ✅ NEW: Index for postId
   @@index([type])
   @@index([createdAt(sort: Desc)])
 }

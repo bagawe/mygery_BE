@@ -4,10 +4,80 @@ const prisma = new PrismaClient();
 
 class PostService {
   /**
+   * Extract mentions from content
+   */
+  extractMentions(content) {
+    if (!content) return [];
+    
+    const mentionRegex = /@([\w]+)/g;
+    const mentions = [];
+    let match;
+    
+    while ((match = mentionRegex.exec(content)) !== null) {
+      const username = match[1];
+      if (!mentions.includes(username)) {
+        mentions.push(username);
+      }
+    }
+    
+    return mentions;
+  }
+
+  /**
+   * Create mention notifications for tagged users
+   */
+  async createMentionNotifications(postId, mentions, authorId, authorName) {
+    try {
+      if (!mentions || mentions.length === 0) return;
+
+      for (const username of mentions) {
+        // Find user by username
+        const mentionedUser = await prisma.user.findFirst({
+          where: {
+            username: {
+              equals: username,
+              mode: 'insensitive'
+            }
+          },
+          select: {
+            id: true,
+            username: true
+          }
+        });
+
+        if (mentionedUser && mentionedUser.id !== authorId) {
+          // Create history entry for mentioned user
+          await prisma.userHistory.create({
+            data: {
+              userId: mentionedUser.id,
+              type: 'mention',
+              description: `${authorName} menyebut Anda dalam postingan`,
+              postId: postId,
+              metadata: {
+                mentionedBy: authorName,
+                mentionedAt: new Date().toISOString()
+              }
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Create mention notifications error:', error);
+      // Don't throw error to prevent post creation failure
+    }
+  }
+
+  /**
    * Create new post
    */
   async createPost(userId, content, imageUrls = []) {
     try {
+      // Get user info for notification
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, username: true }
+      });
+
       const post = await prisma.post.create({
         data: {
           userId,
@@ -24,6 +94,33 @@ class PostService {
               username: true,
               fotoProfil: true
             }
+          }
+        }
+      });
+
+      // Extract mentions from content and create notifications
+      const mentions = this.extractMentions(content);
+      if (mentions.length > 0) {
+        await this.createMentionNotifications(
+          post.id,
+          mentions,
+          userId,
+          user.name || user.username
+        );
+      }
+
+      // Create history for post creator
+      await prisma.userHistory.create({
+        data: {
+          userId,
+          type: 'create_post',
+          description: 'Anda membuat postingan baru',
+          postId: post.id,
+          metadata: {
+            hasImages: imageUrls.length > 0,
+            imageCount: imageUrls.length,
+            hasMentions: mentions.length > 0,
+            mentionCount: mentions.length
           }
         }
       });

@@ -3,6 +3,11 @@ import dotenv from 'dotenv';
 import logger from './utils/logger.js';
 import { scheduleTokenCleanup, runInitialCleanup } from './jobs/tokenCleanup.js';
 
+// Import routes
+import authRoutes from './modules/auth/auth.routes.js';
+import postRoutes from './modules/post/post.routes.js';
+import historyRoutes from './modules/history/history.routes.js'; // ✅ NEW
+
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -44,6 +49,11 @@ process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/history', historyRoutes); // ✅ NEW
 
 const server = app.listen(PORT, async () => {
   logger.info(`🚀 Server is running on port ${PORT} in ${NODE_ENV} mode`);
