@@ -78,23 +78,28 @@ model Post {
 
 model PostLike {
   id        Int      @id @default(autoincrement())
-  post      Post     @relation(fields: [postId], references: [id])
+  post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
   postId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model PostComment {
   id        Int      @id @default(autoincrement())
-  post      Post     @relation(fields: [postId], references: [id])
+  post      Post     @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
   postId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   content   String   // ✅ FIXED: comment -> content (sesuai service)
   createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
 }
 
 model UserRole {
@@ -230,7 +235,7 @@ model PostHashtag {
   hashtagId Int
   createdAt DateTime @default(now())
 
-  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post    Post    @relation("PostHashtags", fields: [postId], references: [id], onDelete: Cascade)
   hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
 
   @@unique([postId, hashtagId])
@@ -244,7 +249,7 @@ model Mention {
   mentionedId Int      // User yang di-mention
   createdAt   DateTime @default(now())
 
-  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post @relation("PostMentions", fields: [postId], references: [id], onDelete: Cascade)
   mentioned User @relation("UserMentions", fields: [mentionedId], references: [id], onDelete: Cascade)
 
   @@unique([postId, mentionedId])
@@ -290,4 +295,7 @@ enum HistoryType {
   open_app
   edit_profile
   search_user
+  mention       // ✅ NEW
+  tag           // ✅ NEW
+  create_post   // ✅ NEW
 }
