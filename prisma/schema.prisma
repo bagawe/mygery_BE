@@ -63,36 +63,43 @@ model Post {
   updatedAt  DateTime       @updatedAt
 
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes      PostLike[]
-  comments   PostComment[]
-  hashtags   PostHashtag[]    // ✅ NEW
-  mentions   Mention[]        // ✅ NEW
+  likes      PostLike[]     @relation("PostLikes")
+  comments   PostComment[]  @relation("PostComments")
+  hashtags   PostHashtag[]  @relation("PostHashtags")
+  mentions   Mention[]      @relation("PostMentions")
   views      PostView[]       // ✅ NEW
   trending   TrendingPost?    // ✅ NEW
+  history     UserHistory[]   @relation("PostHistory") // ✅ NEW: Relation for mention history
 
   @@index([userId])
   @@index([createdAt])
+  @@map("posts")
 }
 
 model PostLike {
   id        Int      @id @default(autoincrement())
-  post      Post     @relation(fields: [postId], references: [id])
+  post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
   postId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model PostComment {
   id        Int      @id @default(autoincrement())
-  post      Post     @relation(fields: [postId], references: [id])
+  post      Post     @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
   postId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   content   String   // ✅ FIXED: comment -> content (sesuai service)
   createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
 }
 
 model UserRole {
@@ -196,11 +203,14 @@ model UserHistory {
   userId      Int
   type        HistoryType
   description String?
+  postId      Int?     // ✅ NEW: ID postingan untuk mention/tag
   metadata    Json?
   createdAt   DateTime    @default(now())
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post        Post?       @relation("PostHistory", fields: [postId], references: [id], onDelete: SetNull) // ✅ NEW: Relation to Post
 
   @@index([userId])
+  @@index([postId]) // ✅ NEW: Index for postId
   @@index([type])
   @@index([createdAt(sort: Desc)])
 }
@@ -225,7 +235,7 @@ model PostHashtag {
   hashtagId Int
   createdAt DateTime @default(now())
 
-  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post    Post    @relation("PostHashtags", fields: [postId], references: [id], onDelete: Cascade)
   hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
 
   @@unique([postId, hashtagId])
@@ -239,7 +249,7 @@ model Mention {
   mentionedId Int      // User yang di-mention
   createdAt   DateTime @default(now())
 
-  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post @relation("PostMentions", fields: [postId], references: [id], onDelete: Cascade)
   mentioned User @relation("UserMentions", fields: [mentionedId], references: [id], onDelete: Cascade)
 
   @@unique([postId, mentionedId])
@@ -285,4 +295,7 @@ enum HistoryType {
   open_app
   edit_profile
   search_user
+  mention       // ✅ NEW
+  tag           // ✅ NEW
+  create_post   // ✅ NEW
 }

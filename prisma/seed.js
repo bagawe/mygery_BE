@@ -1,50 +1,53 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 
-dotenv.config();
 const prisma = new PrismaClient();
 
 async function main() {
-  const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
-  const adminEmail = 'admin@example.com';
-  const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (existing) {
-    console.log('Admin already exists. Skipping seed.');
-    return;
-  }
+  console.log('🌱 Seeding database...');
 
-  const hashed = await bcrypt.hash('Admin123!', saltRounds);
-
-  const user = await prisma.user.create({
-    data: {
-      name: 'Admin',
-      email: adminEmail,
+  // Create admin user
+  const hashedPassword = await bcrypt.hash('Admin123!', 10);
+  
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      email: 'admin@example.com',
       username: 'admin',
-      password: hashed,
+      name: 'Admin User',
+      password: hashedPassword,
       isActive: true,
-      roles: {
-        create: {
-          role: 'admin',
-          profileData: {}
-        }
-      }
     },
-    include: { roles: true }
   });
 
-  await prisma.logActivity.create({
-    data: {
-      userId: user.id,
-      action: 'seed: create admin',
-      ipAddress: '127.0.0.1',
-      userAgent: 'seed-script'
-    }
+  console.log('✅ Admin user created:', admin.email);
+
+  // Create test user
+  const testPassword = await bcrypt.hash('Test123!', 10);
+  
+  const testUser = await prisma.user.upsert({
+    where: { email: 'test@example.com' },
+    update: {},
+    create: {
+      email: 'test@example.com',
+      username: 'testuser',
+      name: 'Test User',
+      password: testPassword,
+      isActive: true,
+    },
   });
 
-  console.log('Seeded admin:', user.email);
+  console.log('✅ Test user created:', testUser.email);
+
+  console.log('✅ Seeding completed!');
 }
 
 main()
-  .catch(e => { console.error(e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((e) => {
+    console.error('❌ Seeding error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
