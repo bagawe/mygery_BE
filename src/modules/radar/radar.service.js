@@ -133,7 +133,7 @@ class RadarService {
         accuracy: loc.accuracy,
         jabatan: loc.user.pekerjaan,
         region: loc.user.provinsi,
-        role: loc.user.roles[0]?.role || 'jobseeker',
+        role: loc.user.roles[0]?.role || 'simpatisan',
         last_update: loc.lastUpdate,
         distance: null
       }));
@@ -332,7 +332,7 @@ class RadarService {
 
       const roleStats = {};
       usersByRole.forEach(loc => {
-        const role = loc.user.roles[0]?.role || 'jobseeker';
+        const role = loc.user.roles[0]?.role || 'simpatisan';
         roleStats[role] = (roleStats[role] || 0) + 1;
       });
 

@@ -35,16 +35,16 @@ export const AuthService = {
       data: { name, email, username, password: hashed }
     });
 
-    // Default role jobseeker
+    // Default role simpatisan
     await prisma.userRole.create({
-      data: { userId: user.id, role: 'jobseeker' }
+      data: { userId: user.id, role: 'simpatisan' }
     });
 
     await prisma.logActivity.create({ 
       data: { 
         userId: user.id, 
         action: 'register',
-        details: { role: 'jobseeker' },
+        details: { role: 'simpatisan' },
         ipAddress,
         userAgent
       }
