@@ -27,7 +27,7 @@ export async function authMiddleware(req, res, next) {
       uuid: user.uuid, 
       email: user.email,
       roles: roleNames,
-      role: roleNames[0] || 'jobseeker'  // Primary role for radar filtering
+      role: roleNames[0] || 'simpatisan'  // Primary role for radar filtering
     };
     next();
   } catch (err) {

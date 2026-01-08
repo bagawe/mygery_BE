@@ -286,8 +286,8 @@ model TrendingPost {
 }
 
 enum Role {
-  jobseeker
-  company
+  simpatisan
+  kader
   admin
 }
 

@@ -72,19 +72,19 @@ class RadarService {
 
       // Role-based filtering
       const userRoleFilter = {};
-      if (currentUserRole === 'jobseeker') {
+      if (currentUserRole === 'simpatisan') {
         // Simpatisan can only see other Simpatisan
         userRoleFilter.roles = {
           some: {
-            role: 'jobseeker'
+            role: 'simpatisan'
           }
         };
-      } else if (currentUserRole === 'company') {
+      } else if (currentUserRole === 'kader') {
         // Kader can see Kader + Simpatisan
         userRoleFilter.roles = {
           some: {
             role: {
-              in: ['company', 'jobseeker']
+              in: ['kader', 'simpatisan']
             }
           }
         };
@@ -133,7 +133,7 @@ class RadarService {
         accuracy: loc.accuracy,
         jabatan: loc.user.pekerjaan,
         region: loc.user.provinsi,
-        role: loc.user.roles[0]?.role || 'jobseeker',
+        role: loc.user.roles[0]?.role || 'simpatisan',
         last_update: loc.lastUpdate,
         distance: null
       }));
@@ -332,7 +332,7 @@ class RadarService {
 
       const roleStats = {};
       usersByRole.forEach(loc => {
-        const role = loc.user.roles[0]?.role || 'jobseeker';
+        const role = loc.user.roles[0]?.role || 'simpatisan';
         roleStats[role] = (roleStats[role] || 0) + 1;
       });
 

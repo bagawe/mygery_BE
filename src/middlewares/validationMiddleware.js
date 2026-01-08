@@ -150,7 +150,7 @@ export const userSchemas = {
     email: commonSchemas.email,
     username: commonSchemas.username,
     password: commonSchemas.password,
-    role: z.enum(['jobseeker', 'company', 'admin']).default('jobseeker')
+    role: z.enum(['simpatisan', 'kader', 'admin']).default('simpatisan')
   }),
   
   update: z.object({
@@ -171,7 +171,7 @@ export const userSchemas = {
     location: z.string().max(100, 'Location cannot exceed 100 characters').optional(),
     skills: z.array(z.string().max(50, 'Skill cannot exceed 50 characters')).max(20, 'Cannot have more than 20 skills').optional(),
     experience: z.array(z.object({
-      company: z.string().max(100, 'Company name cannot exceed 100 characters'),
+      organisasi: z.string().max(100, 'Organisation name cannot exceed 100 characters'),
       position: z.string().max(100, 'Position cannot exceed 100 characters'),
       startDate: commonSchemas.dateString,
       endDate: commonSchemas.dateString.optional(),
@@ -189,7 +189,7 @@ export const userSchemas = {
   
   listUsers: commonSchemas.pagination.extend({
     search: z.string().max(100, 'Search term cannot exceed 100 characters').optional(),
-    role: z.enum(['jobseeker', 'company', 'admin']).optional(),
+    role: z.enum(['simpatisan', 'kader', 'admin']).optional(),
     isActive: z.coerce.boolean().optional()
   })
 };
