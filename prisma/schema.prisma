@@ -51,6 +51,8 @@ model User {
   postComments             PostComment[]
   mentions                 Mention[]                 @relation("UserMentions")    // ✅ NEW
   postViews                PostView[]                @relation("PostViews")       // ✅ NEW
+  location                 UserLocation?             @relation("UserLocation")    // ✅ RADAR
+  locationHistory          LocationHistory[]         @relation("LocationHistory") // ✅ RADAR
 }
 
 model Post {
@@ -298,4 +300,40 @@ enum HistoryType {
   mention       // ✅ NEW
   tag           // ✅ NEW
   create_post   // ✅ NEW
+}
+
+// ✅ NEW: RADAR FEATURE MODELS
+
+model UserLocation {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique
+  latitude          Decimal  @db.Decimal(10, 8)
+  longitude         Decimal  @db.Decimal(11, 8)
+  accuracy          Float?
+  lastUpdate        DateTime @default(now()) @updatedAt
+  isSharingEnabled  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  user User @relation("UserLocation", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lastUpdate])
+  @@index([isSharingEnabled])
+  @@index([isSharingEnabled, lastUpdate])
+  @@map("user_locations")
+}
+
+model LocationHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  latitude  Decimal  @db.Decimal(10, 8)
+  longitude Decimal  @db.Decimal(11, 8)
+  accuracy  Float?
+  timestamp DateTime @default(now())
+
+  user User @relation("LocationHistory", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([timestamp])
+  @@map("location_history")
 }

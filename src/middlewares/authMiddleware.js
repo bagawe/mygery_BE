@@ -26,7 +26,8 @@ export async function authMiddleware(req, res, next) {
       userId: user.id,      // ADD THIS - for post controller compatibility
       uuid: user.uuid, 
       email: user.email,
-      roles: roleNames
+      roles: roleNames,
+      role: roleNames[0] || 'jobseeker'  // Primary role for radar filtering
     };
     next();
   } catch (err) {
