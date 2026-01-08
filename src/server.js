@@ -2,11 +2,7 @@ import app from './app.js';
 import dotenv from 'dotenv';
 import logger from './utils/logger.js';
 import { scheduleTokenCleanup, runInitialCleanup } from './jobs/tokenCleanup.js';
-
-// Import routes
-import authRoutes from './modules/auth/auth.routes.js';
-import postRoutes from './modules/post/post.routes.js';
-import historyRoutes from './modules/history/history.routes.js'; // ✅ NEW
+import { scheduleLocationHistoryCleanup } from './jobs/locationCleanup.js';
 
 dotenv.config();
 
@@ -50,10 +46,8 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/posts', postRoutes);
-app.use('/api/history', historyRoutes); // ✅ NEW
+// Start cron jobs
+scheduleLocationHistoryCleanup();
 
 const server = app.listen(PORT, async () => {
   logger.info(`🚀 Server is running on port ${PORT} in ${NODE_ENV} mode`);
