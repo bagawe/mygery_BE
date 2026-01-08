@@ -65,7 +65,7 @@ class RadarController {
   async getLocations(req, res) {
     try {
       const userId = req.user.userId;
-      const userRole = req.user.role || 'jobseeker';
+      const userRole = req.user.role || 'simpatisan';
       const filters = {
         region: req.query.region,
         jabatan: req.query.jabatan,

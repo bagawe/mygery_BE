@@ -224,7 +224,7 @@ GET /api/radar/locations?latitude=-6.2088&longitude=106.8456&radius=10&limit=50
         "provinsi": "DKI Jakarta",
         "roles": [
           {
-            "role": "jobseeker"
+            "role": "simpatisan"
           }
         ]
       }
@@ -243,7 +243,7 @@ GET /api/radar/locations?latitude=-6.2088&longitude=106.8456&radius=10&limit=50
         "provinsi": "DKI Jakarta",
         "roles": [
           {
-            "role": "company"
+            "role": "kader"
           }
         ]
       }
@@ -404,13 +404,13 @@ Location visibility berdasarkan role user:
 
 | User Role | Can See |
 |-----------|---------|
-| **jobseeker** | Hanya jobseeker lain |
-| **company** | Company + jobseeker |
+| **simpatisan** | Hanya simpatisan lain |
+| **kader** | Kader + simpatisan |
 | **admin** | Semua user (no filter) |
 
 ### Contoh Skenario:
-1. User A (jobseeker) hanya akan melihat lokasi dari user lain yang juga jobseeker
-2. User B (company) akan melihat lokasi dari company lain DAN jobseeker
+1. User A (simpatisan) hanya akan melihat lokasi dari simpatisan lain
+2. User B (kader) akan melihat lokasi dari kader lain DAN simpatisan
 3. User C (admin) akan melihat lokasi semua user tanpa batasan
 
 ---
