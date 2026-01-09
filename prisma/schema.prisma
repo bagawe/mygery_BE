@@ -38,6 +38,9 @@ model User {
   tanggalLahir             DateTime?
   tempatLahir              String?                   @db.VarChar(100)
   underbow                 String?                   @db.VarChar(255)
+  ktaVerified              Boolean                   @default(false)
+  ktaVerifiedAt            DateTime?
+  ktaVerifiedBy            Int?
   conversationParticipants ConversationParticipant[]
   logEntries               LogActivity[]
   messages                 Message[]
@@ -53,6 +56,9 @@ model User {
   postViews                PostView[]                @relation("PostViews")       // ✅ NEW
   location                 UserLocation?             @relation("UserLocation")    // ✅ RADAR
   locationHistory          LocationHistory[]         @relation("LocationHistory") // ✅ RADAR
+  
+  @@index([ktaVerified])
+  @@index([ktaVerifiedAt])
 }
 
 model Post {

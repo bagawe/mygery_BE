@@ -25,6 +25,7 @@ import messageRoutes from './modules/message/message.routes.js';
 import historyRoutes from './modules/history/history.routes.js';
 import postRoutes from './modules/post/post.routes.js';
 import radarRoutes from './modules/radar/radar.routes.js';
+import ktaRoutes from './modules/kta/kta.routes.js';
 
 dotenv.config();
 
@@ -110,6 +111,7 @@ app.use('/api/conversations', messageRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/radar', radarRoutes);
+app.use('/api/kta', ktaRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
