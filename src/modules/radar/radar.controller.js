@@ -12,7 +12,7 @@ class RadarController {
   async updateLocation(req, res) {
     try {
       const userId = req.user.userId;
-      const { latitude, longitude, accuracy } = req.body;
+      const { latitude, longitude, accuracy, is_saved_only } = req.body;
 
       // Validate coordinates
       if (
@@ -33,11 +33,13 @@ class RadarController {
       // Rate limiting: 1 update per minute
       const lastUpdate = updateLimitTracker.get(userId);
       if (lastUpdate && Date.now() - lastUpdate < 60000) {
-        return errorResponse(res, 'Please wait before updating location again', 429);
+        const waitTime = Math.ceil((60000 - (Date.now() - lastUpdate)) / 1000);
+        return errorResponse(res, `Please wait ${waitTime} seconds before updating location again`, 429);
       }
 
-      // Update location
-      const location = await radarService.updateLocation(userId, latitude, longitude, accuracy);
+      // Update location with isSavedOnly flag
+      const isSavedOnly = is_saved_only === true;  // Convert to boolean, default false
+      const location = await radarService.updateLocation(userId, latitude, longitude, accuracy, isSavedOnly);
 
       // Update rate limit tracker
       updateLimitTracker.set(userId, Date.now());

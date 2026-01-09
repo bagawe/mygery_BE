@@ -312,6 +312,7 @@ model UserLocation {
   accuracy          Float?
   lastUpdate        DateTime @default(now()) @updatedAt
   isSharingEnabled  Boolean  @default(false)
+  isSavedLocation   Boolean  @default(false)
   createdAt         DateTime @default(now())
 
   user User @relation("UserLocation", fields: [userId], references: [id], onDelete: Cascade)
@@ -320,6 +321,7 @@ model UserLocation {
   @@index([lastUpdate])
   @@index([isSharingEnabled])
   @@index([isSharingEnabled, lastUpdate])
+  @@index([isSavedLocation])
   @@map("user_locations")
 }
 
