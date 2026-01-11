@@ -5,16 +5,23 @@ const prisma = new PrismaClient();
 class RadarService {
   /**
    * Update user location
+   * @param {boolean} isSavedOnly - If true, only save location without enabling sharing
    */
-  async updateLocation(userId, latitude, longitude, accuracy = null) {
+  async updateLocation(userId, latitude, longitude, accuracy = null, isSavedOnly = false) {
     try {
-      // Check if user has sharing enabled (or create new)
+      // Get existing location
       const existing = await prisma.userLocation.findUnique({
         where: { userId }
       });
 
-      if (existing && !existing.isSharingEnabled) {
-        throw new Error('Location sharing is disabled. Please enable it first.');
+      // Determine sharing status
+      let isSharingEnabled;
+      if (isSavedOnly) {
+        // Manual save: keep existing sharing status (or false if new)
+        isSharingEnabled = existing?.isSharingEnabled || false;
+      } else {
+        // Background service or toggle: enable sharing
+        isSharingEnabled = true;
       }
 
       // Update or create location
@@ -24,14 +31,17 @@ class RadarService {
           latitude,
           longitude,
           accuracy,
-          lastUpdate: new Date()
+          lastUpdate: new Date(),
+          isSharingEnabled,
+          isSavedLocation: true  // Always true when location is saved
         },
         create: {
           userId,
           latitude,
           longitude,
           accuracy,
-          isSharingEnabled: true
+          isSharingEnabled,
+          isSavedLocation: true  // Always true when location is saved
         }
       });
 
@@ -59,9 +69,12 @@ class RadarService {
     try {
       const { region, jabatan, radius, lat, lng, limit = 100 } = filters;
 
-      // Build where clause based on role
+      // Build where clause - return all users with saved or shared locations
       let whereClause = {
-        isSharingEnabled: true,
+        OR: [
+          { isSharingEnabled: true },
+          { isSavedLocation: true }
+        ],
         lastUpdate: {
           gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
         },
@@ -135,6 +148,8 @@ class RadarService {
         region: loc.user.provinsi,
         role: loc.user.roles[0]?.role || 'simpatisan',
         last_update: loc.lastUpdate,
+        is_sharing_enabled: loc.isSharingEnabled,  // NEW FIELD
+        is_saved_location: loc.isSavedLocation,    // NEW FIELD
         distance: null
       }));
 
@@ -212,6 +227,7 @@ class RadarService {
       if (!location) {
         return {
           is_sharing_enabled: false,
+          is_saved_location: false,  // NEW FIELD
           latitude: null,
           longitude: null,
           accuracy: null,
@@ -221,6 +237,7 @@ class RadarService {
 
       return {
         is_sharing_enabled: location.isSharingEnabled,
+        is_saved_location: location.isSavedLocation,  // NEW FIELD
         latitude: location.latitude ? parseFloat(location.latitude.toString()) : null,
         longitude: location.longitude ? parseFloat(location.longitude.toString()) : null,
         accuracy: location.accuracy,

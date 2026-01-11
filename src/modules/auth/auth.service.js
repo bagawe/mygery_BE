@@ -125,7 +125,15 @@ export const AuthService = {
     });
 
     return { 
-      user: { id: user.id, uuid: user.uuid, name: user.name, email: user.email },
+      user: { 
+        id: user.id, 
+        uuid: user.uuid, 
+        name: user.name, 
+        email: user.email,
+        ktaVerified: user.ktaVerified || false,
+        ktaVerifiedAt: user.ktaVerifiedAt,
+        ktaVerifiedBy: user.ktaVerifiedBy
+      },
       accessToken,
       refreshToken: refreshTokenString,
       expiresIn: JWT_EXPIRES_IN
