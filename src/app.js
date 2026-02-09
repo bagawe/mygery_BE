@@ -27,6 +27,12 @@ import postRoutes from './modules/post/post.routes.js';
 import radarRoutes from './modules/radar/radar.routes.js';
 import ktaRoutes from './modules/kta/kta.routes.js';
 
+// New admin feature routes
+import agendaRoutes from './modules/agenda/agenda.routes.js';
+import announcementRoutes from './modules/announcement/announcement.routes.js';
+import kaderRoutes from './modules/kader/kader.routes.js';
+import adminBlockingRoutes from './modules/admin/blocking.routes.js';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -112,6 +118,12 @@ app.use('/api/history', historyRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/radar', radarRoutes);
 app.use('/api/kta', ktaRoutes);
+
+// Admin feature routes
+app.use('/api/agenda', agendaRoutes);
+app.use('/api/announcement', announcementRoutes);
+app.use('/api/kader', kaderRoutes);
+app.use('/api/admin', adminBlockingRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
