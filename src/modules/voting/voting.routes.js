@@ -1,7 +1,7 @@
 import express from 'express';
 import votingController from './voting.controller.js';
-import authMiddleware from '../../middlewares/authMiddleware.js';
-import authorizeRole from '../../middlewares/authorizeRole.js';
+import { authMiddleware } from '../../middlewares/authMiddleware.js';
+import { authorizeRole } from '../../middlewares/authorizeRole.js';
 
 const router = express.Router();
 
