@@ -32,6 +32,7 @@ import agendaRoutes from './modules/agenda/agenda.routes.js';
 import announcementRoutes from './modules/announcement/announcement.routes.js';
 import kaderRoutes from './modules/kader/kader.routes.js';
 import adminBlockingRoutes from './modules/admin/blocking.routes.js';
+import votingRoutes from './modules/voting/voting.routes.js';
 
 dotenv.config();
 
@@ -124,6 +125,7 @@ app.use('/api/agenda', agendaRoutes);
 app.use('/api/announcement', announcementRoutes);
 app.use('/api/kader', kaderRoutes);
 app.use('/api/admin', adminBlockingRoutes);
+app.use('/api/voting', votingRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

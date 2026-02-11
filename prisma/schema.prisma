@@ -408,3 +408,63 @@ enum AnnouncementType {
   download
   artikel
 }
+
+// ⭐ NEW: VOTING SYSTEM MODELS
+model Voting {
+  id                Int              @id @default(autoincrement())
+  uuid              String           @unique @default(uuid())
+  title             String           @db.VarChar(255)
+  question          String           @db.Text
+  questionImageUrl  String?          @db.VarChar(500)
+  votingType        VotingType       @default(single)
+  deadline          DateTime
+  isActive          Boolean          @default(true)
+  createdBy         Int
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  options           VotingOption[]
+  responses         VotingResponse[]
+
+  @@index([isActive])
+  @@index([deadline])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@map("votings")
+}
+
+model VotingOption {
+  id              Int      @id @default(autoincrement())
+  votingId        Int
+  optionText      String   @db.VarChar(500)
+  optionImageUrl  String?  @db.VarChar(500)
+  orderIndex      Int      @default(0)
+  createdAt       DateTime @default(now())
+  
+  voting          Voting   @relation(fields: [votingId], references: [id], onDelete: Cascade)
+
+  @@index([votingId])
+  @@index([orderIndex])
+  @@map("voting_options")
+}
+
+model VotingResponse {
+  id              Int      @id @default(autoincrement())
+  votingId        Int
+  userId          Int
+  selectedOptions Json     // Array of option IDs: [1, 3, 5] or [2]
+  answeredAt      DateTime @default(now())
+  
+  voting          Voting   @relation(fields: [votingId], references: [id], onDelete: Cascade)
+
+  @@unique([votingId, userId]) // Satu user hanya bisa vote 1x per voting
+  @@index([votingId])
+  @@index([userId])
+  @@index([answeredAt])
+  @@map("voting_responses")
+}
+
+enum VotingType {
+  single      // Hanya bisa pilih 1 jawaban
+  multiple    // Bisa pilih beberapa jawaban
+}
