@@ -1,7 +1,7 @@
 # 🌐 ADMIN WEB PANEL - API DOCUMENTATION
 
 **Target:** Vue.js Admin Panel  
-**Date:** February 11, 2026  
+**Date:** February 12, 2026  
 **Backend Version:** v1.0.0  
 **Base URL (Development):** `http://localhost:3030/api`  
 **Base URL (Production):** `https://api.mygerindra.com/api`
@@ -10,7 +10,17 @@
 
 ---
 
+## 📚 RELATED DOCUMENTATION
+
+- **[Admin Web Login Documentation](./ADMIN_WEB_LOGIN_DOCUMENTATION.md)** - Implementasi lengkap login untuk admin web panel
+- **[Voting System API](./VOTING_SYSTEM_API_DOCUMENTATION.md)** - API untuk sistem voting
+- **[Development Setup](./DEVELOPMENT_SETUP.md)** - Setup development environment
+
+---
+
 ## 🔐 AUTHENTICATION
+
+> 📖 **Untuk implementasi login lengkap dengan Vue.js code examples, lihat:** [ADMIN_WEB_LOGIN_DOCUMENTATION.md](./ADMIN_WEB_LOGIN_DOCUMENTATION.md)
 
 ### **Admin Login**
 ```javascript
