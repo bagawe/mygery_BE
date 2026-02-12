@@ -22,4 +22,7 @@ router.post('/check-blocked', blockingController.checkBlocked.bind(blockingContr
 // Statistics
 router.get('/blocking-stats', blockingController.getStats.bind(blockingController));
 
+// Get active IP addresses
+router.get('/active-ips', blockingController.getActiveIPs.bind(blockingController));
+
 export default router;

@@ -187,6 +187,76 @@ class AdminBlockingService {
       byRole: roleStats
     };
   }
+
+  /**
+   * Get active IP addresses with user information
+   */
+  async getActiveIPs(query = '', limit = 50, includeBlocked = false) {
+    const where = {
+      deviceIp: {
+        not: null,
+        ...(query && { contains: query })
+      }
+    };
+
+    // Exclude blocked users if includeBlocked is false
+    if (!includeBlocked) {
+      where.isBlocked = false;
+    }
+
+    // Get all users with device IPs
+    const usersWithIPs = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        deviceIp: true,
+        isBlocked: true,
+        updatedAt: true
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    });
+
+    // Group by IP address
+    const ipMap = new Map();
+
+    usersWithIPs.forEach(user => {
+      if (!user.deviceIp) return;
+
+      if (!ipMap.has(user.deviceIp)) {
+        ipMap.set(user.deviceIp, {
+          deviceIp: user.deviceIp,
+          userCount: 0,
+          lastSeen: user.updatedAt,
+          isBlocked: user.isBlocked,
+          users: []
+        });
+      }
+
+      const ipData = ipMap.get(user.deviceIp);
+      ipData.userCount++;
+      ipData.users.push({
+        id: user.id,
+        name: user.name,
+        email: user.email
+      });
+
+      // Update lastSeen to most recent
+      if (user.updatedAt > ipData.lastSeen) {
+        ipData.lastSeen = user.updatedAt;
+      }
+    });
+
+    // Convert map to array and sort by last seen
+    const result = Array.from(ipMap.values())
+      .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen))
+      .slice(0, limit);
+
+    return result;
+  }
 }
 
 export default new AdminBlockingService();

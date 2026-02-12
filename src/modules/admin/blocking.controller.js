@@ -159,6 +159,39 @@ class AdminBlockingController {
       });
     }
   }
+
+  /**
+   * Get active IP addresses
+   * GET /api/admin/active-ips
+   */
+  async getActiveIPs(req, res) {
+    try {
+      const { q, limit, includeBlocked } = req.query;
+
+      const ips = await blockingService.getActiveIPs(
+        q || '',
+        limit ? parseInt(limit) : 50,
+        includeBlocked === 'true'
+      );
+
+      res.json({
+        success: true,
+        data: ips,
+        meta: {
+          total: ips.length,
+          limit: limit ? parseInt(limit) : 50,
+          uniqueIPs: ips.length
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching active IPs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch active IPs',
+        error: error.message
+      });
+    }
+  }
 }
 
 export default new AdminBlockingController();
