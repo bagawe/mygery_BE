@@ -48,6 +48,30 @@ class KaderConfirmationController {
   }
 
   /**
+   * Get pending Simpatisan confirmations (Alur 3 - FE Web)
+   * Alias for getPendingPoint2
+   * GET /api/kader/pending/simpatisan
+   */
+  async getPendingSimpatisan(req, res) {
+    try {
+      const pending = await kaderService.getPendingSimpatisan();
+
+      res.json({
+        success: true,
+        data: pending,
+        count: pending.length
+      });
+    } catch (error) {
+      console.error('Error fetching pending simpatisan:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch pending simpatisan',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Confirm Point 1 (Old Member)
    * POST /api/kader/confirm/point1/:userId
    */
@@ -101,29 +125,57 @@ class KaderConfirmationController {
 
       res.json({
         success: true,
-        message: 'Point 2 confirmation successful - User upgraded to kader',
+        message: 'Kader baru berhasil diverifikasi dan menjadi Kader',
         data: user
       });
     } catch (error) {
       console.error('Error confirming Point 2:', error);
       
       if (error.message === 'User not found') {
-        return res.status(404).json({
-          success: false,
-          message: error.message
-        });
+        return res.status(404).json({ success: false, message: error.message });
       }
-
       if (error.message === 'User is already a kader' || error.message === 'User already confirmed for Point 2') {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
+        return res.status(400).json({ success: false, message: error.message });
       }
 
       res.status(500).json({
         success: false,
         message: 'Failed to confirm Point 2',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Confirm Simpatisan → Kader (Alur 3 - FE Web)
+   * Alias for confirmPoint2
+   * POST /api/kader/confirm/simpatisan/:userId
+   */
+  async confirmSimpatisan(req, res) {
+    try {
+      const { userId } = req.params;
+      const adminId = req.user.userId;
+
+      const user = await kaderService.confirmSimpatisan(userId, adminId);
+
+      res.json({
+        success: true,
+        message: 'Simpatisan berhasil diverifikasi dan menjadi Kader',
+        data: user
+      });
+    } catch (error) {
+      console.error('Error confirming simpatisan:', error);
+
+      if (error.message === 'User not found') {
+        return res.status(404).json({ success: false, message: error.message });
+      }
+      if (error.message === 'User is already a kader' || error.message === 'User already confirmed for Point 2') {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to confirm simpatisan',
         error: error.message
       });
     }
@@ -194,6 +246,39 @@ class KaderConfirmationController {
       res.status(500).json({
         success: false,
         message: 'Failed to reject Point 2',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Reject Simpatisan upgrade (Alur 3 - FE Web)
+   * Alias for rejectPoint2
+   * POST /api/kader/reject/simpatisan/:userId
+   */
+  async rejectSimpatisan(req, res) {
+    try {
+      const { userId } = req.params;
+      const { reason } = req.body;
+      const adminId = req.user.userId;
+
+      const result = await kaderService.rejectSimpatisan(userId, adminId, reason);
+
+      res.json({
+        success: true,
+        message: result.message,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error rejecting simpatisan:', error);
+
+      if (error.message === 'User not found') {
+        return res.status(404).json({ success: false, message: error.message });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to reject simpatisan',
         error: error.message
       });
     }
