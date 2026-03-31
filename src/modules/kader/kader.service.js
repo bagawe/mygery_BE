@@ -41,8 +41,9 @@ class KaderConfirmationService {
   }
 
   /**
-   * Get pending Point 2 confirmations (New Members)
+   * Get pending Point 2 confirmations (New Members / Kader Baru)
    * Simpatisan who have applied to become kader
+   * NOTE: "kader_baru" in FE docs = user with role 'simpatisan' + kaderPoint2Confirmed=false
    */
   async getPendingPoint2() {
     const pendingUpgrade = await prisma.user.findMany({
@@ -66,7 +67,8 @@ class KaderConfirmationService {
         kaderPoint2ConfirmedAt: true,
         roles: {
           select: {
-            role: true
+            role: true,
+            isActive: true
           }
         }
       },
@@ -76,6 +78,15 @@ class KaderConfirmationService {
     });
 
     return pendingUpgrade;
+  }
+
+  /**
+   * Get pending Simpatisan confirmations
+   * ALIAS for getPendingPoint2 — FE Alur 3 = same as Point 2
+   * Simpatisan pending upgrade to kader
+   */
+  async getPendingSimpatisan() {
+    return this.getPendingPoint2();
   }
 
   /**
@@ -138,6 +149,12 @@ class KaderConfirmationService {
       throw new Error('User already confirmed for Point 2');
     }
 
+    // Deactivate old simpatisan role
+    await prisma.userRole.updateMany({
+      where: { userId: parseInt(userId), role: 'simpatisan' },
+      data: { isActive: false }
+    });
+
     // Upgrade simpatisan to kader - Create new kader role
     await prisma.userRole.create({
       data: {
@@ -156,11 +173,21 @@ class KaderConfirmationService {
         kaderPoint2ConfirmedBy: parseInt(adminId)
       },
       include: {
-        roles: true
+        roles: {
+          select: { role: true, isActive: true }
+        }
       }
     });
 
     return updated;
+  }
+
+  /**
+   * Confirm Simpatisan → Kader (Alur 3 - FE Web)
+   * ALIAS for confirmPoint2
+   */
+  async confirmSimpatisan(userId, adminId) {
+    return this.confirmPoint2(userId, adminId);
   }
 
   /**
@@ -212,16 +239,34 @@ class KaderConfirmationService {
       throw new Error('User is not a simpatisan');
     }
 
-    // Keep them as simpatisan
+    // Keep them as simpatisan, log the rejection
+    await prisma.logActivity.create({
+      data: {
+        userId: parseInt(userId),
+        action: 'kader_point2_rejected',
+        details: { reason, rejectedBy: adminId },
+        success: false
+      }
+    });
+
     return {
-      message: 'Point 2 upgrade rejected',
+      message: 'Point 2 upgrade rejected, user remains as simpatisan',
       userId: user.id,
       reason
     };
   }
 
   /**
+   * Reject Simpatisan upgrade (Alur 3 - FE Web)
+   * ALIAS for rejectPoint2
+   */
+  async rejectSimpatisan(userId, adminId, reason) {
+    return this.rejectPoint2(userId, adminId, reason);
+  }
+
+  /**
    * Get confirmation statistics
+   * Returns format matching FE web dashboard requirement
    */
   async getConfirmationStats() {
     const [
@@ -229,55 +274,49 @@ class KaderConfirmationService {
       point1Confirmed,
       point1Pending,
       totalSimpatisan,
-      point2Applied,
+      point2Pending,
       point2Confirmed
     ] = await Promise.all([
+      // Point 1: kader lama
       prisma.user.count({ 
-        where: { 
-          roles: { some: { role: 'kader', isActive: true } }
-        }
+        where: { roles: { some: { role: 'kader', isActive: true } } }
       }),
       prisma.user.count({ 
-        where: { 
-          roles: { some: { role: 'kader', isActive: true } },
-          kaderPoint1Confirmed: true
-        }
+        where: { roles: { some: { role: 'kader', isActive: true } }, kaderPoint1Confirmed: true }
       }),
       prisma.user.count({ 
-        where: { 
-          roles: { some: { role: 'kader', isActive: true } },
-          kaderPoint1Confirmed: false
-        }
+        where: { roles: { some: { role: 'kader', isActive: true } }, kaderPoint1Confirmed: false }
+      }),
+      // Point 2 / Simpatisan: simpatisan pending → kader
+      prisma.user.count({ 
+        where: { roles: { some: { role: 'simpatisan', isActive: true } } }
       }),
       prisma.user.count({ 
-        where: { 
-          roles: { some: { role: 'simpatisan', isActive: true } }
-        }
+        where: { roles: { some: { role: 'simpatisan', isActive: true } }, kaderPoint2Confirmed: false }
       }),
       prisma.user.count({ 
-        where: { 
-          roles: { some: { role: 'simpatisan', isActive: true } },
-          kaderPoint2Confirmed: false
-        }
-      }),
-      prisma.user.count({ 
-        where: { 
-          kaderPoint2Confirmed: true
-        }
+        where: { kaderPoint2Confirmed: true }
       })
     ]);
 
+    // Format sesuai FE web requirement (BACKEND_VERIFICATION_FLOW.md)
     return {
-      point1: {
-        totalKader,
-        confirmed: point1Confirmed,
-        pending: point1Pending
-      },
-      point2: {
-        totalSimpatisan,
-        applied: point2Applied,
-        confirmed: point2Confirmed
-      }
+      // Point 1 - Kader Lama
+      pending_point1: point1Pending,
+      confirmed_point1: point1Confirmed,
+
+      // Point 2 - Kader Baru (FE menyebut kader_baru = simpatisan pending upgrade)
+      pending_point2: point2Pending,
+      confirmed_point2: point2Confirmed,
+
+      // Simpatisan (Alur 3 = sama dengan Point 2, alias)
+      pending_simpatisan: point2Pending,
+      confirmed_simpatisan: point2Confirmed,
+
+      // Totals
+      total_kader_verified: point1Confirmed + point2Confirmed,
+      total_simpatisan: totalSimpatisan,
+      total_kader: totalKader
     };
   }
 
