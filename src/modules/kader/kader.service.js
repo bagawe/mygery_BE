@@ -119,10 +119,20 @@ class KaderConfirmationService {
         kaderPoint1Confirmed: true,
         kaderPoint1ConfirmedAt: new Date(),
         kaderPoint1ConfirmedBy: parseInt(adminId)
+      },
+      include: {
+        roles: {
+          select: { role: true, isActive: true }
+        }
       }
     });
 
-    return updated;
+    const activeRoles = updated.roles.filter(r => r.isActive).map(r => r.role);
+    return {
+      ...updated,
+      role: activeRoles.includes('kader') ? 'kader' : activeRoles[0] || 'simpatisan',
+      activeRoles
+    };
   }
 
   /**
@@ -179,7 +189,16 @@ class KaderConfirmationService {
       }
     });
 
-    return updated;
+    // Tambahkan field role aktif agar mobile bisa langsung baca
+    const activeRoles = updated.roles.filter(r => r.isActive).map(r => r.role);
+    const rolePriority = ['admin', 'kader', 'simpatisan'];
+    const primaryRole = rolePriority.find(r => activeRoles.includes(r)) || activeRoles[0] || 'simpatisan';
+
+    return {
+      ...updated,
+      role: primaryRole,        // ← field "role" aktif untuk mobile
+      activeRoles               // ← semua role aktif
+    };
   }
 
   /**
