@@ -303,6 +303,32 @@ class VotingController {
       });
     }
   }
+
+  /**
+   * MOBILE/PUBLIC: Get active votings (kader can vote)
+   * GET /api/voting/active
+   */
+  async getActiveVotings(req, res) {
+    try {
+      const userId = req.user?.id || null;
+      const page = req.query.page || 1;
+      const limit = req.query.limit || 20;
+
+      const result = await votingService.getActiveVotings(userId, page, limit);
+
+      res.status(200).json({
+        success: true,
+        data: result.data,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      console.error('Get active votings error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to fetch active votings'
+      });
+    }
+  }
 }
 
 export default new VotingController();

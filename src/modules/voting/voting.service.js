@@ -526,6 +526,116 @@ class VotingService {
       totalResponses
     };
   }
+
+  /**
+   * Get active votings for public (users can vote)
+   * Used by kader/simpatisan to view and vote on active votings
+   */
+  async getActiveVotings(userId, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const now = new Date();
+
+    const [votings, total] = await Promise.all([
+      prisma.voting.findMany({
+        where: {
+          isActive: true,
+          deadline: { gte: now }
+        },
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          options: {
+            orderBy: { orderIndex: 'asc' },
+            select: {
+              id: true,
+              optionText: true,
+              optionImageUrl: true,
+              orderIndex: true
+            }
+          },
+          _count: {
+            select: { responses: true }
+          }
+        }
+      }),
+      prisma.voting.count({
+        where: {
+          isActive: true,
+          deadline: { gte: now }
+        }
+      })
+    ]);
+
+    // Get user's votes for each voting
+    const userVotesMap = {};
+    if (userId) {
+      const userVotes = await prisma.votingResponse.findMany({
+        where: { userId },
+        select: { votingId: true, selectedOptions: true }
+      });
+      userVotes.forEach(vote => {
+        userVotesMap[vote.votingId] = vote.selectedOptions;
+      });
+    }
+
+    // Get vote counts for each option
+    const votingsWithOptions = await Promise.all(
+      votings.map(async (voting) => {
+        const optionVoteCounts = await prisma.votingOption.findMany({
+          where: { votingId: voting.id },
+          select: {
+            id: true,
+            _count: { select: { votes: true } }
+          }
+        });
+
+        const optionsWithVotes = voting.options.map(opt => {
+          const voteCount = optionVoteCounts.find(vc => vc.id === opt.id)?._count?.votes || 0;
+          return {
+            id: opt.id,
+            text: opt.optionText,
+            imageUrl: opt.optionImageUrl,
+            voteCount
+          };
+        });
+
+        return {
+          id: voting.id,
+          uuid: voting.uuid,
+          title: voting.title,
+          question: voting.question,
+          questionImageUrl: voting.questionImageUrl,
+          votingType: voting.votingType,
+          startDate: voting.createdAt,
+          endDate: voting.deadline,
+          status: 'active',
+          createdBy: {
+            id: voting.createdBy,
+            name: 'Admin',
+            username: 'admin'
+          },
+          totalVotes: voting._count.responses,
+          userHasVoted: !!userVotesMap[voting.id],
+          userSelectedOptions: userVotesMap[voting.id] || [],
+          options: optionsWithVotes,
+          createdAt: voting.createdAt,
+          updatedAt: voting.updatedAt
+        };
+      })
+    );
+
+    return {
+      data: votingsWithOptions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+        hasNextPage: skip + votings.length < total
+      }
+    };
+  }
 }
 
 export default new VotingService();
