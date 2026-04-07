@@ -506,3 +506,33 @@ enum NotificationType {
   like
   comment
 }
+
+// ⭐ NEW: ONBOARDING SLIDES MODEL
+model OnboardingSlide {
+  id              Int       @id @default(autoincrement())
+  uuid            String    @unique @default(uuid())
+  order           Int       @default(0)
+  title           String?   @db.VarChar(255)
+  description     String?   @db.Text
+  imageUrl        String?   @db.VarChar(500)
+  backgroundColor String?   @db.VarChar(7)
+  type            OnboardingType @default(title_image)
+  skipAllowed     Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  createdBy       Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([order])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("onboarding_slides")
+}
+
+enum OnboardingType {
+  title_image
+  title_text
+  image_only
+  text_only
+  title_image_text
+}
