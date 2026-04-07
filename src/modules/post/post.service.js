@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import notificationService from '../notification/notification.service.js';
 
 const prisma = new PrismaClient();
 
@@ -362,6 +363,10 @@ class PostService {
             id: existingLike.id
           }
         });
+
+        // Remove like notification on unlike
+        await notificationService.removeLikeNotification(postId, userId);
+
         return { liked: false };
       } else {
         await prisma.postLike.create({
@@ -370,6 +375,10 @@ class PostService {
             userId
           }
         });
+
+        // Auto-create like notification (skips if own post)
+        await notificationService.createLikeNotification(postId, userId);
+
         return { liked: true };
       }
     } catch (error) {
@@ -401,6 +410,9 @@ class PostService {
           }
         }
       });
+
+      // Auto-create comment notification (skips if own post)
+      await notificationService.createCommentNotification(postId, comment.id, userId, content);
 
       return comment;
     } catch (error) {

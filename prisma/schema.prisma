@@ -72,6 +72,8 @@ model User {
   postViews                PostView[]                @relation("PostViews")       // ✅ NEW
   location                 UserLocation?             @relation("UserLocation")    // ✅ RADAR
   locationHistory          LocationHistory[]         @relation("LocationHistory") // ✅ RADAR
+  notificationsReceived    Notification[]            @relation("NotificationReceiver") // ✅ NOTIFICATION
+  notificationsSent        Notification[]            @relation("NotificationSender")   // ✅ NOTIFICATION
   
   @@index([ktaVerified])
   @@index([ktaVerifiedAt])
@@ -98,6 +100,7 @@ model Post {
   views      PostView[]       // ✅ NEW
   trending   TrendingPost?    // ✅ NEW
   history     UserHistory[]   @relation("PostHistory") // ✅ NEW: Relation for mention history
+  notifications Notification[] @relation("NotificationPost") // ✅ NOTIFICATION
 
   @@index([userId])
   @@index([createdAt])
@@ -471,4 +474,35 @@ model VotingResponse {
 enum VotingType {
   single      // Hanya bisa pilih 1 jawaban
   multiple    // Bisa pilih beberapa jawaban
+}
+
+// ⭐ NEW: NOTIFICATION MODEL
+model Notification {
+  id              Int              @id @default(autoincrement())
+  userId          Int              // Penerima notifikasi
+  type            NotificationType
+  postId          Int?
+  commentId       Int?
+  fromUserId      Int              // Pengirim/pelaku aksi
+  fromUserName    String           @db.VarChar(255)
+  fromUserUsername String          @db.VarChar(255)
+  message         String?          @db.Text
+  isRead          Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user     User  @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("NotificationSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  post     Post? @relation("NotificationPost", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([fromUserId])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  like
+  comment
 }
