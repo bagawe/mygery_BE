@@ -5,8 +5,16 @@ import { authorizeRole } from '../../middlewares/authorizeRole.js';
 
 const router = express.Router();
 
-// Public route for mobile
+// Public route for mobile (unauthenticated)
 router.get('/public', agendaController.getPublicAgendas.bind(agendaController));
+
+// Kader route (authenticated, kader role)
+router.get(
+  '/',
+  authMiddleware,
+  authorizeRole('kader', 'admin'),
+  agendaController.getAgendas.bind(agendaController)
+);
 
 // Admin routes
 router.post(
@@ -14,13 +22,6 @@ router.post(
   authMiddleware,
   authorizeRole('admin'),
   agendaController.createAgenda.bind(agendaController)
-);
-
-router.get(
-  '/',
-  authMiddleware,
-  authorizeRole('admin'),
-  agendaController.getAgendas.bind(agendaController)
 );
 
 router.get(

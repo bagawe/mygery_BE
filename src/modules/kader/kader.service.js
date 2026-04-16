@@ -91,45 +91,41 @@ class KaderConfirmationService {
 
   /**
    * Confirm Point 1 (Old Member) - Admin confirms existing kader
+   * Atomic transaction — tidak bisa double data
    */
   async confirmPoint1(userId, adminId) {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        roles: true
-      }
-    });
+    const id = parseInt(userId);
+    if (isNaN(id)) throw new Error('Invalid userId');
 
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id },
+        include: { roles: true }
+      });
 
-    const hasKaderRole = user.roles.some(r => r.role === 'kader' && r.isActive);
-    if (!hasKaderRole) {
-      throw new Error('User is not a kader');
-    }
+      if (!user) throw new Error('User not found');
 
-    if (user.kaderPoint1Confirmed) {
-      throw new Error('User already confirmed for Point 1');
-    }
+      const hasKaderRole = user.roles.some(r => r.role === 'kader' && r.isActive);
+      if (!hasKaderRole) throw new Error('User is not a kader');
 
-    const updated = await prisma.user.update({
-      where: { id: parseInt(userId) },
-      data: {
-        kaderPoint1Confirmed: true,
-        kaderPoint1ConfirmedAt: new Date(),
-        kaderPoint1ConfirmedBy: parseInt(adminId)
-      },
-      include: {
-        roles: {
-          select: { role: true, isActive: true }
+      if (user.kaderPoint1Confirmed) throw new Error('User already confirmed for Point 1');
+
+      return tx.user.update({
+        where: { id },
+        data: {
+          kaderPoint1Confirmed: true,
+          kaderPoint1ConfirmedAt: new Date(),
+          kaderPoint1ConfirmedBy: parseInt(adminId)
+        },
+        include: {
+          roles: { select: { role: true, isActive: true } }
         }
-      }
+      });
     });
 
-    const activeRoles = updated.roles.filter(r => r.isActive).map(r => r.role);
+    const activeRoles = result.roles.filter(r => r.isActive).map(r => r.role);
     return {
-      ...updated,
+      ...result,
       role: activeRoles.includes('kader') ? 'kader' : activeRoles[0] || 'simpatisan',
       activeRoles
     };
@@ -137,67 +133,62 @@ class KaderConfirmationService {
 
   /**
    * Confirm Point 2 (New Member) - Admin upgrades simpatisan to kader
+   * Atomic transaction — tidak bisa double data
+   * Upsert role kader — jika sudah ada update isActive, jika belum baru create
    */
   async confirmPoint2(userId, adminId) {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        roles: true
-      }
-    });
+    const id = parseInt(userId);
+    if (isNaN(id)) throw new Error('Invalid userId');
 
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Cek user exist
+      const user = await tx.user.findUnique({
+        where: { id },
+        include: { roles: true }
+      });
 
-    const hasKaderRole = user.roles.some(r => r.role === 'kader' && r.isActive);
-    if (hasKaderRole) {
-      throw new Error('User is already a kader');
-    }
+      if (!user) throw new Error('User not found');
 
-    if (user.kaderPoint2Confirmed) {
-      throw new Error('User already confirmed for Point 2');
-    }
+      const hasKaderRole = user.roles.some(r => r.role === 'kader' && r.isActive);
+      if (hasKaderRole) throw new Error('User is already a kader');
 
-    // Deactivate old simpatisan role
-    await prisma.userRole.updateMany({
-      where: { userId: parseInt(userId), role: 'simpatisan' },
-      data: { isActive: false }
-    });
+      if (user.kaderPoint2Confirmed) throw new Error('User already confirmed for Point 2');
 
-    // Upgrade simpatisan to kader - Create new kader role
-    await prisma.userRole.create({
-      data: {
-        userId: parseInt(userId),
-        role: 'kader',
-        isActive: true
-      }
-    });
-    
-    // Update confirmation fields
-    const updated = await prisma.user.update({
-      where: { id: parseInt(userId) },
-      data: {
-        kaderPoint2Confirmed: true,
-        kaderPoint2ConfirmedAt: new Date(),
-        kaderPoint2ConfirmedBy: parseInt(adminId)
-      },
-      include: {
-        roles: {
-          select: { role: true, isActive: true }
+      // 2. Deactivate role simpatisan
+      await tx.userRole.updateMany({
+        where: { userId: id, role: 'simpatisan' },
+        data: { isActive: false }
+      });
+
+      // 3. Upsert role kader — @@unique([userId, role]) mencegah duplikat
+      await tx.userRole.upsert({
+        where: { userId_role: { userId: id, role: 'kader' } },
+        update: { isActive: true },
+        create: { userId: id, role: 'kader', isActive: true }
+      });
+
+      // 4. Update confirmation fields (UPDATE user, bukan CREATE baru)
+      return tx.user.update({
+        where: { id },
+        data: {
+          kaderPoint2Confirmed: true,
+          kaderPoint2ConfirmedAt: new Date(),
+          kaderPoint2ConfirmedBy: parseInt(adminId)
+        },
+        include: {
+          roles: { select: { role: true, isActive: true } }
         }
-      }
+      });
     });
 
-    // Tambahkan field role aktif agar mobile bisa langsung baca
-    const activeRoles = updated.roles.filter(r => r.isActive).map(r => r.role);
+    const activeRoles = result.roles.filter(r => r.isActive).map(r => r.role);
     const rolePriority = ['admin', 'kader', 'simpatisan'];
     const primaryRole = rolePriority.find(r => activeRoles.includes(r)) || activeRoles[0] || 'simpatisan';
 
     return {
-      ...updated,
-      role: primaryRole,        // ← field "role" aktif untuk mobile
-      activeRoles               // ← semua role aktif
+      ...result,
+      role: primaryRole,
+      activeRoles
     };
   }
 

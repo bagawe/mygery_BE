@@ -3,8 +3,8 @@ import crypto from 'crypto';
 dotenv.config();
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'replace_me';
-export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m'; // Short-lived access token
-export const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
+export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d'; // ✅ Updated: 30 days session duration (frontend requirement)
+export const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '90d'; // ✅ Updated: 90 days (longer than access token)
 export const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'replace_me_refresh';
 
 // Generate secure random refresh token

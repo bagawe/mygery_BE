@@ -72,6 +72,8 @@ model User {
   postViews                PostView[]                @relation("PostViews")       // ✅ NEW
   location                 UserLocation?             @relation("UserLocation")    // ✅ RADAR
   locationHistory          LocationHistory[]         @relation("LocationHistory") // ✅ RADAR
+  notificationsReceived    Notification[]            @relation("NotificationReceiver") // ✅ NOTIFICATION
+  notificationsSent        Notification[]            @relation("NotificationSender")   // ✅ NOTIFICATION
   
   @@index([ktaVerified])
   @@index([ktaVerifiedAt])
@@ -98,6 +100,7 @@ model Post {
   views      PostView[]       // ✅ NEW
   trending   TrendingPost?    // ✅ NEW
   history     UserHistory[]   @relation("PostHistory") // ✅ NEW: Relation for mention history
+  notifications Notification[] @relation("NotificationPost") // ✅ NOTIFICATION
 
   @@index([userId])
   @@index([createdAt])
@@ -140,6 +143,10 @@ model UserRole {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])  // Prevent duplicate role per user → fix double data bug
+  @@index([userId])
+  @@index([role])
 }
 
 model LogActivity {
@@ -467,4 +474,65 @@ model VotingResponse {
 enum VotingType {
   single      // Hanya bisa pilih 1 jawaban
   multiple    // Bisa pilih beberapa jawaban
+}
+
+// ⭐ NEW: NOTIFICATION MODEL
+model Notification {
+  id              Int              @id @default(autoincrement())
+  userId          Int              // Penerima notifikasi
+  type            NotificationType
+  postId          Int?
+  commentId       Int?
+  fromUserId      Int              // Pengirim/pelaku aksi
+  fromUserName    String           @db.VarChar(255)
+  fromUserUsername String          @db.VarChar(255)
+  message         String?          @db.Text
+  isRead          Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user     User  @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("NotificationSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  post     Post? @relation("NotificationPost", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([fromUserId])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  like
+  comment
+}
+
+// ⭐ NEW: ONBOARDING SLIDES MODEL
+model OnboardingSlide {
+  id              Int       @id @default(autoincrement())
+  uuid            String    @unique @default(uuid())
+  order           Int       @default(0)
+  title           String?   @db.VarChar(255)
+  description     String?   @db.Text
+  imageUrl        String?   @db.VarChar(500)
+  backgroundColor String?   @db.VarChar(7)
+  type            OnboardingType @default(title_image)
+  skipAllowed     Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  createdBy       Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([order])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("onboarding_slides")
+}
+
+enum OnboardingType {
+  title_image
+  title_text
+  image_only
+  text_only
+  title_image_text
 }

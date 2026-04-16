@@ -109,14 +109,14 @@ router.get(
 
 /**
  * @route   GET /api/voting/active
- * @desc    Get active votings for kader
- * @access  Kader only
+ * @desc    Get active votings for kader and admin
+ * @access  Kader & Admin
  * @note    Must be before /:id route
  */
 router.get(
   '/active',
   authMiddleware,
-  authorizeRole('kader'),
+  authorizeRole('kader', 'admin'), // ✅ FIXED: Allow both kader and admin
   votingController.getActiveVotings
 );
 
